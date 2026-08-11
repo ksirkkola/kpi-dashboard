@@ -1,0 +1,9 @@
+{
+  "author": "Thermetrics",
+  "appId": "6a7182d6ada150db8ae3a5e3",
+  "version": "1.0.0",
+  "versionDescription": "KPI Dashboard — Sales, Administrative and Support metrics",
+  "config": {
+    "fields": {}
+  }
+}
