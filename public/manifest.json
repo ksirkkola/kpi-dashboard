@@ -1,8 +1,8 @@
 {
   "author": "Thermetrics",
   "appId": "6a7182d6ada150db8ae3a5e3",
-  "version": "1.0.0",
-  "versionDescription": "KPI Dashboard — Sales, Administrative and Support metrics",
+  "version": "1.4.0",
+  "versionDescription": "Support tab: added 3 metrics that existed on Support Tickets but were never surfaced — Open Urgent/High priority count (call-out), a Priority breakdown, a Request Type breakdown, and Hours Logged (real engineer time from Time Tracking entries, not just ticket counts).",
   "config": {
     "fields": {}
   }

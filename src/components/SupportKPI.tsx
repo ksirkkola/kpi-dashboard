@@ -76,6 +76,24 @@ export default function SupportKPI({ refreshKey = 0 }: Props) {
   const openTickets     = filteredTickets.filter(r => r.phase !== 'Done');
   const billableTickets = filteredTickets.filter(r => r.billable === 'Yes');
 
+  // Priority breakdown
+  const priorityCounts: Record<string, number> = {};
+  filteredTickets.forEach(r => {
+    const p = String(r.priority || 'Unset');
+    priorityCounts[p] = (priorityCounts[p] || 0) + 1;
+  });
+  const openUrgentOrHigh = openTickets.filter(r => r.priority === 'Urgent' || r.priority === 'High').length;
+
+  // Request type breakdown
+  const requestTypeCounts: Record<string, number> = {};
+  filteredTickets.forEach(r => {
+    const t = String(r.requestType || 'Unspecified');
+    requestTypeCounts[t] = (requestTypeCounts[t] || 0) + 1;
+  });
+
+  // Support hours logged (real engineer time, not just ticket counts)
+  const totalHoursLogged = filteredTickets.reduce((s, r) => s + (Number(r.totalHoursLogged) || 0), 0);
+
   // Avg resolution time (days)
   const resolved = resolvedTickets.filter(r => r.dateReceived && r.ticketComplete);
   const avgResolutionDays = resolved.length > 0
@@ -146,7 +164,37 @@ export default function SupportKPI({ refreshKey = 0 }: Props) {
         <Box p={4} bg={cardBg} borderRadius="md" shadow="sm" border="1px" borderColor={borderColor} borderTop="3px solid" borderTopColor="teal.400">
           <Stat><StatLabel>Billable</StatLabel><StatNumber>{billableTickets.length}</StatNumber><StatHelpText>{billableRate}% of tickets</StatHelpText></Stat>
         </Box>
+        <Box p={4} bg={cardBg} borderRadius="md" shadow="sm" border="1px" borderColor={borderColor} borderTop="3px solid" borderTopColor={openUrgentOrHigh > 0 ? 'red.400' : 'green.400'}>
+          <Stat><StatLabel>Open Urgent/High</StatLabel><StatNumber color={openUrgentOrHigh > 0 ? 'red.500' : 'green.500'}>{openUrgentOrHigh}</StatNumber><StatHelpText>of {openTickets.length} open</StatHelpText></Stat>
+        </Box>
+        <Box p={4} bg={cardBg} borderRadius="md" shadow="sm" border="1px" borderColor={borderColor} borderTop="3px solid" borderTopColor="purple.400">
+          <Stat><StatLabel>Hours Logged</StatLabel><StatNumber>{totalHoursLogged.toFixed(1)}h</StatNumber><StatHelpText>Engineer time, {selectedYear}</StatHelpText></Stat>
+        </Box>
       </SimpleGrid>
+
+      {/* Priority breakdown */}
+      {Object.keys(priorityCounts).length > 0 && (
+        <SimpleGrid columns={{ base: 2, md: 4 }} spacing={3} mb={6}>
+          {['Urgent', 'High', 'Normal', 'Low'].filter(p => priorityCounts[p]).map(p => (
+            <Box key={p} p={3} bg={cardBg} borderRadius="md" border="1px" borderColor={borderColor}>
+              <Text fontSize="xs" color="gray.500">{p} Priority</Text>
+              <Text fontWeight="bold" fontSize="lg">{priorityCounts[p]}</Text>
+            </Box>
+          ))}
+        </SimpleGrid>
+      )}
+
+      {/* Request type breakdown */}
+      {Object.keys(requestTypeCounts).length > 0 && (
+        <SimpleGrid columns={{ base: 2, md: 3, lg: 6 }} spacing={3} mb={6}>
+          {Object.entries(requestTypeCounts).map(([type, count]) => (
+            <Box key={type} p={3} bg={cardBg} borderRadius="md" border="1px" borderColor={borderColor}>
+              <Text fontSize="xs" color="gray.500">{type}</Text>
+              <Text fontWeight="bold" fontSize="lg">{count}</Text>
+            </Box>
+          ))}
+        </SimpleGrid>
+      )}
 
       {/* By engineer */}
       {Object.keys(byEngineer).length > 0 && (

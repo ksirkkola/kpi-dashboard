@@ -51,7 +51,7 @@ export default function App() {
       </Box>
 
       <Box px={6} pb={8}>
-        <Tabs variant="enclosed" colorScheme="blue">
+        <Tabs variant="enclosed" colorScheme="blue" isLazy>
           <TabList mb={4}>
             <Tab fontWeight="semibold">Sales</Tab>
             <Tab fontWeight="semibold">Administrative</Tab>

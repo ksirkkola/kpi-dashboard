@@ -8,6 +8,13 @@ import { useApp } from '../hailer/use-app';
 
 const INSIGHT_TRIPS = '6a718201693253992c877b29';
 const INSIGHT_INV   = '6a718204891833385a34c9ec';
+const INSIGHT_LINKEDIN     = '6aaba1bb317bf2cb5b48818d';
+const INSIGHT_CONFERENCES  = '6aaba1c0317bf2cb5b4881bb';
+
+const CONFERENCE_CHECKLIST_KEYS = [
+  'registration', 'boothBuildPreferences', 'manikinTransportationTo', 'manikinTransportationFrom',
+  'travelBooked', 'hotelBooked', 'pamphletsOrdered', 'boothInfoReceived', 'giveawaysOrdered', 'businessCardsStocked',
+];
 
 const currentYear = new Date().getFullYear().toString();
 
@@ -31,6 +38,8 @@ export default function AdminKPI({ refreshKey = 0 }: Props) {
   const { hailer, inside } = useApp();
   const [tripsRows, setTripsRows] = useState<Record<string, unknown>[]>([]);
   const [invRows, setInvRows]     = useState<Record<string, unknown>[]>([]);
+  const [linkedInRows, setLinkedInRows] = useState<Record<string, unknown>[]>([]);
+  const [conferenceRows, setConferenceRows] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading]     = useState(true);
   const [selectedYear, setSelectedYear] = useState(currentYear);
 
@@ -45,9 +54,13 @@ export default function AdminKPI({ refreshKey = 0 }: Props) {
     Promise.all([
       hailer!.insight.data(INSIGHT_TRIPS, { update: true }),
       hailer!.insight.data(INSIGHT_INV, { update: true }),
-    ]).then(([trips, inv]) => {
+      hailer!.insight.data(INSIGHT_LINKEDIN, { update: true }),
+      hailer!.insight.data(INSIGHT_CONFERENCES, { update: true }),
+    ]).then(([trips, inv, linkedIn, conferences]) => {
       setTripsRows(parseInsight(trips));
       setInvRows(parseInsight(inv));
+      setLinkedInRows(parseInsight(linkedIn));
+      setConferenceRows(parseInsight(conferences));
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [inside, refreshKey]);
@@ -91,6 +104,20 @@ export default function AdminKPI({ refreshKey = 0 }: Props) {
     .filter(r => (Number(r.quantityOnHand) || 0) === 0 || ((Number(r.minimumStock) || 0) > 0 && (Number(r.quantityOnHand) || 0) <= (Number(r.minimumStock) || 0)))
     .sort((a, b) => (Number(a.quantityOnHand) || 0) - (Number(b.quantityOnHand) || 0))
     .slice(0, 5);
+
+  // Marketing — LinkedIn Content Calendar
+  const totalPosts     = linkedInRows.length;
+  const scheduledPosts = linkedInRows.filter(r => r.phase === 'Scheduled').length;
+  const postedPosts    = linkedInRows.filter(r => r.phase === 'Posted').length;
+  const boostedPosts   = linkedInRows.filter(r => r.boosted === 'Yes').length;
+
+  // Marketing — Conference Tracking
+  const DONE_OR_CANCELLED = new Set(['Done', 'Cancelled']);
+  const totalConferences    = conferenceRows.length;
+  const upcomingConferences = conferenceRows.filter(r => !DONE_OR_CANCELLED.has(String(r.phase))).length;
+  const prepIncompleteConferences = conferenceRows.filter(r =>
+    !DONE_OR_CANCELLED.has(String(r.phase)) && CONFERENCE_CHECKLIST_KEYS.some(key => r[key] !== 'Yes'),
+  ).length;
 
   if (loading) return <Flex justify="center" align="center" h="300px"><Spinner size="xl" /></Flex>;
 
@@ -182,6 +209,25 @@ export default function AdminKPI({ refreshKey = 0 }: Props) {
           </Table>
         </Box>
       )}
+
+      <Divider my={6} />
+
+      {/* Marketing */}
+      <Heading size="sm" mb={4} color="pink.600" textTransform="uppercase" letterSpacing="wide">Marketing</Heading>
+      <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4} mb={4}>
+        <Box p={4} bg={cardBg} borderRadius="md" shadow="sm" border="1px" borderColor={borderColor} borderTop="3px solid" borderTopColor="pink.400">
+          <Stat><StatLabel>LinkedIn Posts</StatLabel><StatNumber>{totalPosts}</StatNumber><StatHelpText>{postedPosts} posted</StatHelpText></Stat>
+        </Box>
+        <Box p={4} bg={cardBg} borderRadius="md" shadow="sm" border="1px" borderColor={borderColor} borderTop="3px solid" borderTopColor="orange.400">
+          <Stat><StatLabel>Scheduled</StatLabel><StatNumber color="orange.500">{scheduledPosts}</StatNumber><StatHelpText>{boostedPosts} boosted</StatHelpText></Stat>
+        </Box>
+        <Box p={4} bg={cardBg} borderRadius="md" shadow="sm" border="1px" borderColor={borderColor} borderTop="3px solid" borderTopColor="blue.400">
+          <Stat><StatLabel>Conferences</StatLabel><StatNumber>{totalConferences}</StatNumber><StatHelpText>{upcomingConferences} upcoming</StatHelpText></Stat>
+        </Box>
+        <Box p={4} bg={cardBg} borderRadius="md" shadow="sm" border="1px" borderColor={borderColor} borderTop="3px solid" borderTopColor={prepIncompleteConferences > 0 ? 'red.400' : 'green.400'}>
+          <Stat><StatLabel>Prep Incomplete</StatLabel><StatNumber color={prepIncompleteConferences > 0 ? 'red.500' : 'green.500'}>{prepIncompleteConferences}</StatNumber><StatHelpText>of {upcomingConferences} upcoming</StatHelpText></Stat>
+        </Box>
+      </SimpleGrid>
     </Box>
   );
 }
