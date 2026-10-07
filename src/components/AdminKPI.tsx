@@ -136,7 +136,7 @@ export default function AdminKPI({ refreshKey = 0 }: Props) {
 
       <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4} mb={6}>
         <Box p={4} bg={cardBg} borderRadius="md" shadow="sm" border="1px" borderColor={borderColor} borderTop="3px solid" borderTopColor="purple.400">
-          <Stat><StatLabel>Total Trips</StatLabel><StatNumber>{filteredTrips.length}</StatNumber><StatHelpText>{closedTrips.length} closed</StatHelpText></Stat>
+          <Stat><StatLabel>Trips (Follow-Up & Closed)</StatLabel><StatNumber>{filteredTrips.length}</StatNumber><StatHelpText>{closedTrips.length} closed</StatHelpText></Stat>
         </Box>
         <Box p={4} bg={cardBg} borderRadius="md" shadow="sm" border="1px" borderColor={borderColor} borderTop="3px solid" borderTopColor="green.400">
           <Stat><StatLabel>Invoiced</StatLabel><StatNumber fontSize="lg">{fmt(totalInvoiced)}</StatNumber></Stat>

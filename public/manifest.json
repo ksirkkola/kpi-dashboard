@@ -1,8 +1,8 @@
 {
   "author": "Thermetrics",
   "appId": "6a7182d6ada150db8ae3a5e3",
-  "version": "1.4.0",
-  "versionDescription": "Support tab: added 3 metrics that existed on Support Tickets but were never surfaced — Open Urgent/High priority count (call-out), a Priority breakdown, a Request Type breakdown, and Hours Logged (real engineer time from Time Tracking entries, not just ticket counts).",
+  "version": "1.5.0",
+  "versionDescription": "Trips / IHS KPIs (trip counts, Invoiced, Expenses, Net, service-type breakdown) now only include trips in Follow-Up Activities or Closed. Invoiced comes from TMXE Total. The trips card is relabelled 'Trips (Follow-Up & Closed)'.",
   "config": {
     "fields": {}
   }

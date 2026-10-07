@@ -222,7 +222,7 @@ export default function SupportKPI({ refreshKey = 0 }: Props) {
       <Heading size="sm" mb={4} color="purple.600" textTransform="uppercase" letterSpacing="wide">TRIPS / IHS</Heading>
       <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
         <Box p={4} bg={cardBg} borderRadius="md" shadow="sm" border="1px" borderColor={borderColor} borderTop="3px solid" borderTopColor="purple.400">
-          <Stat><StatLabel>Total Trips</StatLabel><StatNumber>{filteredTrips.length}</StatNumber><StatHelpText>{closedTrips.length} completed</StatHelpText></Stat>
+          <Stat><StatLabel>Trips (Follow-Up & Closed)</StatLabel><StatNumber>{filteredTrips.length}</StatNumber><StatHelpText>{closedTrips.length} completed</StatHelpText></Stat>
         </Box>
         <Box p={4} bg={cardBg} borderRadius="md" shadow="sm" border="1px" borderColor={borderColor} borderTop="3px solid" borderTopColor="green.400">
           <Stat><StatLabel>Invoiced</StatLabel><StatNumber fontSize="lg">{fmt(totalInvoiced)}</StatNumber></Stat>
