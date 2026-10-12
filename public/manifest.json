@@ -1,8 +1,8 @@
 {
   "author": "Thermetrics",
   "appId": "6a7182d6ada150db8ae3a5e3",
-  "version": "1.5.1",
-  "versionDescription": "Admin and Support tabs: trip expenses now include loyalty fees (airfare, hotel, meals, transport, other + loyalty), so Expenses and Net match the Operations Dashboard. The Admin card is relabelled Expenses.",
+  "version": "1.5.2",
+  "versionDescription": "Admin and Support tabs: trip expenses now also include parts cost (supplier price x quantity on each trip), alongside travel and loyalty fees, so Expenses and Net match the Operations Dashboard Revenue & Expenses.",
   "config": {
     "fields": {}
   }

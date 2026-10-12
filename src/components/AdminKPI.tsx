@@ -8,6 +8,7 @@ import { useApp } from '../hailer/use-app';
 
 const INSIGHT_TRIPS = '6a718201693253992c877b29';
 const INSIGHT_TRIP_LOYALTY = '6acc6bb962a1233a74d00bb7'; // id + loyaltyFees per trip
+const INSIGHT_TRIP_PARTS = '6a71c2ab4af977ffe55cf4bd'; // trip, quantityRequired, supplierPrice per part line
 const INSIGHT_INV   = '6a718204891833385a34c9ec';
 const INSIGHT_LINKEDIN     = '6aaba1bb317bf2cb5b48818d';
 const INSIGHT_CONFERENCES  = '6aaba1c0317bf2cb5b4881bb';
@@ -33,11 +34,20 @@ function parseInsight(data: { headers: string[]; rows: unknown[][] }): Record<st
   });
 }
 
-// Adds each trip's loyalty fee (from its own small insight, matched by trip id) to the trip rows.
-function withLoyalty(trips: Record<string, unknown>[], loyalty: Record<string, unknown>[]): Record<string, unknown>[] {
-  const byId = new Map<string, number>();
-  loyalty.forEach(r => byId.set(r.id as string, Number(r.loyaltyFees) || 0));
-  return trips.map(r => ({ ...r, loyaltyFees: byId.get(r.id as string) ?? 0 }));
+// Adds each trip's loyalty fee and parts cost (each from its own small insight, matched by trip id) to the trip rows.
+// Parts cost = supplier price x quantity required, summed over the trip's part lines (same as the Operations Dashboard).
+function withExtras(
+  trips: Record<string, unknown>[], loyalty: Record<string, unknown>[], parts: Record<string, unknown>[],
+): Record<string, unknown>[] {
+  const loyaltyById = new Map<string, number>();
+  loyalty.forEach(r => loyaltyById.set(r.id as string, Number(r.loyaltyFees) || 0));
+  const partsById = new Map<string, number>();
+  parts.forEach(r => {
+    const t = r.trip as string;
+    if (!t) return;
+    partsById.set(t, (partsById.get(t) || 0) + (Number(r.supplierPrice) || 0) * (Number(r.quantityRequired) || 1));
+  });
+  return trips.map(r => ({ ...r, loyaltyFees: loyaltyById.get(r.id as string) ?? 0, partsCost: partsById.get(r.id as string) ?? 0 }));
 }
 
 interface Props { refreshKey?: number; }
@@ -66,8 +76,9 @@ export default function AdminKPI({ refreshKey = 0 }: Props) {
       hailer!.insight.data(INSIGHT_CONFERENCES, { update: true }),
       // Optional: if this fails the tab still loads, just without loyalty fees.
       hailer!.insight.data(INSIGHT_TRIP_LOYALTY, { update: true }).catch(() => null),
-    ]).then(([trips, inv, linkedIn, conferences, loyalty]) => {
-      setTripsRows(withLoyalty(parseInsight(trips), loyalty ? parseInsight(loyalty) : []));
+      hailer!.insight.data(INSIGHT_TRIP_PARTS, { update: true }).catch(() => null),
+    ]).then(([trips, inv, linkedIn, conferences, loyalty, parts]) => {
+      setTripsRows(withExtras(parseInsight(trips), loyalty ? parseInsight(loyalty) : [], parts ? parseInsight(parts) : []));
       setInvRows(parseInsight(inv));
       setLinkedInRows(parseInsight(linkedIn));
       setConferenceRows(parseInsight(conferences));
@@ -92,7 +103,7 @@ export default function AdminKPI({ refreshKey = 0 }: Props) {
   const totalPO        = filteredTrips.reduce((s, r) => s + (Number(r.poAmount) || 0), 0);
   const totalExpenses  = filteredTrips.reduce((s, r) =>
     s + (Number(r.airfare) || 0) + (Number(r.hotel) || 0) + (Number(r.meals) || 0) +
-    (Number(r.transportation) || 0) + (Number(r.other) || 0) + (Number(r.loyaltyFees) || 0), 0);
+    (Number(r.transportation) || 0) + (Number(r.other) || 0) + (Number(r.loyaltyFees) || 0) + (Number(r.partsCost) || 0), 0);
   const netMargin = totalInvoiced - totalExpenses;
 
   // Service type breakdown
