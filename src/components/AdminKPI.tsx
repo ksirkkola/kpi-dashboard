@@ -7,6 +7,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useApp } from '../hailer/use-app';
 
 const INSIGHT_TRIPS = '6a718201693253992c877b29';
+const INSIGHT_TRIP_LOYALTY = '6acc6bb962a1233a74d00bb7'; // id + loyaltyFees per trip
 const INSIGHT_INV   = '6a718204891833385a34c9ec';
 const INSIGHT_LINKEDIN     = '6aaba1bb317bf2cb5b48818d';
 const INSIGHT_CONFERENCES  = '6aaba1c0317bf2cb5b4881bb';
@@ -30,6 +31,13 @@ function parseInsight(data: { headers: string[]; rows: unknown[][] }): Record<st
     data.headers.forEach((h, i) => { r[h] = row[i]; });
     return r;
   });
+}
+
+// Adds each trip's loyalty fee (from its own small insight, matched by trip id) to the trip rows.
+function withLoyalty(trips: Record<string, unknown>[], loyalty: Record<string, unknown>[]): Record<string, unknown>[] {
+  const byId = new Map<string, number>();
+  loyalty.forEach(r => byId.set(r.id as string, Number(r.loyaltyFees) || 0));
+  return trips.map(r => ({ ...r, loyaltyFees: byId.get(r.id as string) ?? 0 }));
 }
 
 interface Props { refreshKey?: number; }
@@ -56,8 +64,10 @@ export default function AdminKPI({ refreshKey = 0 }: Props) {
       hailer!.insight.data(INSIGHT_INV, { update: true }),
       hailer!.insight.data(INSIGHT_LINKEDIN, { update: true }),
       hailer!.insight.data(INSIGHT_CONFERENCES, { update: true }),
-    ]).then(([trips, inv, linkedIn, conferences]) => {
-      setTripsRows(parseInsight(trips));
+      // Optional: if this fails the tab still loads, just without loyalty fees.
+      hailer!.insight.data(INSIGHT_TRIP_LOYALTY, { update: true }).catch(() => null),
+    ]).then(([trips, inv, linkedIn, conferences, loyalty]) => {
+      setTripsRows(withLoyalty(parseInsight(trips), loyalty ? parseInsight(loyalty) : []));
       setInvRows(parseInsight(inv));
       setLinkedInRows(parseInsight(linkedIn));
       setConferenceRows(parseInsight(conferences));
@@ -82,7 +92,7 @@ export default function AdminKPI({ refreshKey = 0 }: Props) {
   const totalPO        = filteredTrips.reduce((s, r) => s + (Number(r.poAmount) || 0), 0);
   const totalExpenses  = filteredTrips.reduce((s, r) =>
     s + (Number(r.airfare) || 0) + (Number(r.hotel) || 0) + (Number(r.meals) || 0) +
-    (Number(r.transportation) || 0) + (Number(r.other) || 0), 0);
+    (Number(r.transportation) || 0) + (Number(r.other) || 0) + (Number(r.loyaltyFees) || 0), 0);
   const netMargin = totalInvoiced - totalExpenses;
 
   // Service type breakdown
@@ -142,7 +152,7 @@ export default function AdminKPI({ refreshKey = 0 }: Props) {
           <Stat><StatLabel>Invoiced</StatLabel><StatNumber fontSize="lg">{fmt(totalInvoiced)}</StatNumber></Stat>
         </Box>
         <Box p={4} bg={cardBg} borderRadius="md" shadow="sm" border="1px" borderColor={borderColor} borderTop="3px solid" borderTopColor="red.400">
-          <Stat><StatLabel>Travel Expenses</StatLabel><StatNumber fontSize="lg" color="red.500">{fmt(totalExpenses)}</StatNumber></Stat>
+          <Stat><StatLabel>Expenses</StatLabel><StatNumber fontSize="lg" color="red.500">{fmt(totalExpenses)}</StatNumber></Stat>
         </Box>
         <Box p={4} bg={cardBg} borderRadius="md" shadow="sm" border="1px" borderColor={borderColor} borderTop="3px solid" borderTopColor={netMargin >= 0 ? 'green.400' : 'red.400'}>
           <Stat><StatLabel>Net Margin</StatLabel><StatNumber fontSize="lg" color={netMargin >= 0 ? 'green.500' : 'red.500'}>{fmt(netMargin)}</StatNumber></Stat>
